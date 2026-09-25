@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sentiero</title>
+<meta name="description" content="Traccia le tue camminate mattutine: tempo, km e percorso.">
+<meta name="theme-color" content="#2F6B4D">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Sentiero">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #F3F6F1;
+    --surface: #FFFFFF;
+    --surface-2: #E9F0E7;
+    --text: #1B2A20;
+    --muted: #60705F;
+    --accent: #2F6B4D;
+    --accent-strong: #1F5138;
+    --accent-ink: #FFFFFF;
+    --warm: #C97A2E;
+    --border: #DCE6DC;
+    --danger: #B8483C;
+    --danger-ink: #FFFFFF;
+    --shadow: 0 1px 2px rgba(30, 40, 30, 0.06), 0 8px 24px -12px rgba(30, 40, 30, 0.18);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10150F;
+      --surface: #171D16;
+      --surface-2: #1E2A1D;
+      --text: #E7EFE4;
+      --muted: #94A692;
+      --accent: #5FBE8A;
+      --accent-strong: #7ED2A2;
+      --accent-ink: #0E1A12;
+      --warm: #E3A868;
+      --border: #283427;
+      --danger: #E0897B;
+      --danger-ink: #2A1210;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 28px -14px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10150F;
+    --surface: #171D16;
+    --surface-2: #1E2A1D;
+    --text: #E7EFE4;
+    --muted: #94A692;
+    --accent: #5FBE8A;
+    --accent-strong: #7ED2A2;
+    --accent-ink: #0E1A12;
+    --warm: #E3A868;
+    --border: #283427;
+    --danger: #E0897B;
+    --danger-ink: #2A1210;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 28px -14px rgba(0,0,0,0.6);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    padding-inline: 16px;
+    padding-block: 20px 40px;
+    max-width: 480px;
+    margin-inline: auto;
+    margin-block: 0;
+  }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; margin: 0; text-wrap: balance; }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 18px;
+  }
+  header .greet { font-size: 1.5rem; font-weight: 500; }
+  header .date { font-size: 0.8rem; color: var(--muted); text-transform: capitalize; }
+
+  .tracker-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .stat { text-align: center; }
+  .stat .label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .stat .value { font-family: 'Fraunces', Georgia, serif; font-size: 1.55rem; font-weight: 500; }
+  .stat.warm .value { color: var(--warm); }
+
+  .route-box {
+    background: var(--surface-2);
+    border-radius: 14px;
+    aspect-ratio: 4 / 3;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+  .route-box svg { width: 100%; height: 100%; }
+  .route-box .empty-hint { color: var(--muted); font-size: 0.85rem; text-align: center; padding: 0 20px; }
+  .route-box .gps-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 0.68rem;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .route-box .gps-badge.live { color: var(--accent-strong); border-color: var(--accent); }
+
+  button.record {
+    width: 100%;
+    border: none;
+    border-radius: 14px;
+    padding: 16px;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--accent);
+    color: var(--accent-ink);
+    transition: transform 0.08s ease;
+  }
+  button.record:active { transform: scale(0.98); }
+  button.record.stop { background: var(--danger); color: var(--danger-ink); }
+  button.record:disabled { opacity: 0.6; cursor: default; }
+
+  .error-msg {
+    font-size: 0.8rem;
+    color: var(--danger);
+    margin-top: 10px;
+    text-align: center;
+  }
+
+  .install-hint {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  section.history { margin-top: 28px; }
+  section.history h2 { font-size: 1.1rem; margin-bottom: 12px; }
+  .empty-history { color: var(--muted); font-size: 0.9rem; padding: 20px 0; text-align: center; }
+
+  .walk-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+  }
+  .walk-row .day {
+    width: 46px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .walk-row .day .num { font-family: 'Fraunces', serif; font-size: 1.3rem; line-height: 1; }
+  .walk-row .day .mon { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; }
+  .walk-row .info { flex: 1; min-width: 0; }
+  .walk-row .info .km { font-weight: 600; }
+  .walk-row .info .meta { font-size: 0.78rem; color: var(--muted); }
+  .walk-row .chev { color: var(--muted); font-size: 1.1rem; }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 10;
+    overflow-y: auto;
+    padding-inline: 16px;
+    padding-block: 20px 40px;
+  }
+  .overlay-inner { max-width: 480px; margin-inline: auto; }
+  .back-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 0.9rem;
+    padding: 6px 0;
+    margin-bottom: 14px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .detail-title { font-size: 1.4rem; margin-bottom: 4px; }
+  .detail-date { color: var(--muted); font-size: 0.85rem; margin-bottom: 18px; text-transform: capitalize; }
+  .delete-btn {
+    width: 100%;
+    margin-top: 18px;
+    border: 1px solid var(--danger);
+    background: none;
+    color: var(--danger);
+    border-radius: 12px;
+    padding: 12px;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="greet" id="greeting">Buongiorno</div>
+    <div class="date tabular" id="todayDate"></div>
+  </div>
+</header>
+
+<div class="tracker-card">
+  <div class="stats-row">
+    <div class="stat">
+      <div class="label">Tempo</div>
+      <div class="value tabular" id="statTime">00:00</div>
+    </div>
+    <div class="stat warm">
+      <div class="label">Km</div>
+      <div class="value tabular" id="statKm">0,00</div>
+    </div>
+    <div class="stat">
+      <div class="label">Ritmo</div>
+      <div class="value tabular" id="statPace">–</div>
+    </div>
+  </div>
+
+  <div class="route-box">
+    <span class="gps-badge" id="gpsBadge" hidden>GPS…</span>
+    <svg id="liveRoute" viewBox="0 0 100 75" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="empty-hint" id="routeEmptyHint">Il percorso comparirà qui mentre cammini</div>
+  </div>
+
+  <button class="record" id="recordBtn">Inizia camminata</button>
+  <div class="error-msg" id="errorMsg" hidden></div>
+  <div class="install-hint" id="installHint" hidden>Suggerimento: dal menu del browser scegli "Aggiungi a schermata Home" per usarla come app.</div>
+</div>
+
+<section class="history">
+  <h2>Le tue camminate</h2>
+  <div id="historyList"></div>
+  <div class="empty-history" id="emptyHistory" hidden>Nessuna camminata salvata ancora.</div>
+</section>
+
+<div class="overlay" id="detailOverlay" hidden>
+  <div class="overlay-inner">
+    <button class="back-btn" id="backBtn">&larr; Indietro</button>
+    <div class="detail-title" id="detailTitle"></div>
+    <div class="detail-date" id="detailDate"></div>
+    <div class="stats-row">
+      <div class="stat">
+        <div class="label">Tempo</div>
+        <div class="value tabular" id="detailTime"></div>
+      </div>
+      <div class="stat warm">
+        <div class="label">Km</div>
+        <div class="value tabular" id="detailKm"></div>
+      </div>
+      <div class="stat">
+        <div class="label">Ritmo</div>
+        <div class="value tabular" id="detailPace"></div>
+      </div>
+    </div>
+    <div class="route-box" style="aspect-ratio: 1 / 1;">
+      <svg id="detailRoute" viewBox="0 0 100 75" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <button class="delete-btn" id="deleteBtn">Elimina camminata</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  const MONTHS = ["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"];
+  const MONTHS_FULL = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+  const DAYS_FULL = ["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"];
+
+  let walksCache = [];
+
+  let tracking = false;
+  let watchId = null;
+  let points = []; // {lat, lng, t}
+  let distanceKm = 0;
+  let startedAt = null;
+  let timerInterval = null;
+
+  const $ = (id) => document.getElementById(id);
+
+  function fmtDuration(sec) {
+    sec = Math.max(0, Math.round(sec));
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    if (h > 0) return h + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  }
+
+  function fmtKm(km) {
+    return km.toFixed(2).replace(".", ",");
+  }
+
+  function fmtPace(km, sec) {
+    if (km < 0.05) return "–";
+    const paceMinPerKm = (sec / 60) / km;
+    if (!isFinite(paceMinPerKm) || paceMinPerKm <= 0) return "–";
+    const m = Math.floor(paceMinPerKm);
+    const s = Math.round((paceMinPerKm - m) * 60);
+    return m + "'" + String(s).padStart(2, "0") + '"';
+  }
+
+  function haversineKm(a, b) {
+    const R = 6371;
+    const dLat = (b.lat - a.lat) * Math.PI / 180;
+    const dLng = (b.lng - a.lng) * Math.PI / 180;
+    const la1 = a.lat * Math.PI / 180;
+    const la2 = b.lat * Math.PI / 180;
+    const h = Math.sin(dLat/2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLng/2) ** 2;
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+
+  function pointsToPath(pts, vbW, vbH, pad) {
+    if (pts.length < 2) return null;
+    const lats = pts.map(p => p.lat);
+    const lngs = pts.map(p => p.lng);
+    const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+    const midLat = (minLat + maxLat) / 2;
+    const cos = Math.cos(midLat * Math.PI / 180);
+    const spanX = Math.max(1e-6, (maxLng - minLng) * cos);
+    const spanY = Math.max(1e-6, (maxLat - minLat));
+    const scale = Math.min((vbW - pad * 2) / spanX, (vbH - pad * 2) / spanY);
+    const offX = (vbW - spanX * scale) / 2;
+    const offY = (vbH - spanY * scale) / 2;
+    const toXY = (p) => {
+      const x = (p.lng - minLng) * cos * scale + offX;
+      const y = vbH - ((p.lat - minLat) * scale + offY);
+      return [x, y];
+    };
+    const coords = pts.map(toXY);
+    let d = "M " + coords[0][0].toFixed(2) + " " + coords[0][1].toFixed(2);
+    for (let i = 1; i < coords.length; i++) {
+      d += " L " + coords[i][0].toFixed(2) + " " + coords[i][1].toFixed(2);
+    }
+    return { d, start: coords[0], end: coords[coords.length - 1] };
+  }
+
+  function renderRoute(svgEl, pts, accentColor) {
+    svgEl.innerHTML = "";
+    if (pts.length < 2) return;
+    const built = pointsToPath(pts, 100, 75, 8);
+    if (!built) return;
+    const ns = "http://www.w3.org/2000/svg";
+    const path = document.createElementNS(ns, "path");
+    path.setAttribute("d", built.d);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", accentColor);
+    path.setAttribute("stroke-width", "2.2");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    svgEl.appendChild(path);
+
+    const dot = (xy, fill) => {
+      const c = document.createElementNS(ns, "circle");
+      c.setAttribute("cx", xy[0]);
+      c.setAttribute("cy", xy[1]);
+      c.setAttribute("r", "2.6");
+      c.setAttribute("fill", fill);
+      svgEl.appendChild(c);
+    };
+    dot(built.start, "#7BAE8F");
+    dot(built.end, accentColor);
+  }
+
+  function accentColor() {
+    return getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#2F6B4D";
+  }
+
+  // ---------- live tracking ----------
+
+  function updateLiveStats() {
+    const elapsed = (Date.now() - startedAt) / 1000;
+    $("statTime").textContent = fmtDuration(elapsed);
+    $("statKm").textContent = fmtKm(distanceKm);
+    $("statPace").textContent = fmtPace(distanceKm, elapsed);
+  }
+
+  function onPosition(pos) {
+    const acc = pos.coords.accuracy;
+    $("gpsBadge").hidden = false;
+    $("gpsBadge").classList.add("live");
+    $("gpsBadge").textContent = "GPS ±" + Math.round(acc) + "m";
+    if (acc > 30) return;
+
+    const p = { lat: pos.coords.latitude, lng: pos.coords.longitude, t: pos.timestamp };
+    const last = points[points.length - 1];
+    if (last) {
+      const dt = (p.t - last.t) / 1000;
+      const dkm = haversineKm(last, p);
+      const speedKmh = dt > 0 ? (dkm / dt) * 3600 : 0;
+      if (dt < 1 || speedKmh > 15) return;
+      distanceKm += dkm;
+    }
+    points.push(p);
+    $("routeEmptyHint").hidden = points.length > 1;
+    renderRoute($("liveRoute"), points, accentColor());
+  }
+
+  function onPositionError(err) {
+    $("errorMsg").hidden = false;
+    if (err.code === err.PERMISSION_DENIED) {
+      $("errorMsg").textContent = "Permesso GPS negato. Controlla le autorizzazioni di posizione del browser per questo sito.";
+    } else {
+      $("errorMsg").textContent = "GPS non disponibile al momento (" + err.message + "). Riprovo automaticamente.";
+    }
+  }
+
+  function startTracking() {
+    if (!("geolocation" in navigator)) {
+      $("errorMsg").hidden = false;
+      $("errorMsg").textContent = "Questo browser non supporta il GPS.";
+      return;
+    }
+    $("errorMsg").hidden = true;
+    tracking = true;
+    points = [];
+    distanceKm = 0;
+    startedAt = Date.now();
+    $("recordBtn").textContent = "Termina camminata";
+    $("recordBtn").classList.add("stop");
+    $("routeEmptyHint").hidden = false;
+    renderRoute($("liveRoute"), [], accentColor());
+
+    watchId = navigator.geolocation.watchPosition(onPosition, onPositionError, {
+      enableHighAccuracy: true,
+      maximumAge: 2000,
+      timeout: 15000
+    });
+    timerInterval = setInterval(updateLiveStats, 1000);
+  }
+
+  function stopTracking() {
+    tracking = false;
+    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = null;
+    $("recordBtn").textContent = "Inizia camminata";
+    $("recordBtn").classList.remove("stop");
+    $("gpsBadge").hidden = true;
+    $("gpsBadge").classList.remove("live");
+
+    const durationSec = (Date.now() - startedAt) / 1000;
+    if (points.length >= 2 && distanceKm > 0.01) {
+      saveWalk({
+        startedAt: new Date(startedAt).toISOString(),
+        durationSec,
+        distanceKm,
+        points: downsample(points, 300)
+      });
+    }
+    points = [];
+    distanceKm = 0;
+    $("statTime").textContent = "00:00";
+    $("statKm").textContent = "0,00";
+    $("statPace").textContent = "–";
+    $("liveRoute").innerHTML = "";
+    $("routeEmptyHint").hidden = false;
+  }
+
+  function downsample(pts, max) {
+    if (pts.length <= max) return pts.map(p => ({ lat: p.lat, lng: p.lng }));
+    const step = pts.length / max;
+    const out = [];
+    for (let i = 0; i < max; i++) {
+      const p = pts[Math.floor(i * step)];
+      out.push({ lat: p.lat, lng: p.lng });
+    }
+    return out;
+  }
+
+  $("recordBtn").addEventListener("click", () => {
+    if (tracking) stopTracking(); else startTracking();
+  });
+
+  // ---------- storage (locale sul telefono) ----------
+
+  function loadLocalWalks() {
+    try {
+      return JSON.parse(localStorage.getItem("sentiero_walks") || "[]");
+    } catch (e) { return []; }
+  }
+  function persistWalks(list) {
+    try { localStorage.setItem("sentiero_walks", JSON.stringify(list)); } catch (e) {}
+  }
+
+  function saveWalk(walk) {
+    walk.id = "w_" + Date.now();
+    const list = loadLocalWalks();
+    list.unshift(walk);
+    persistWalks(list);
+    walksCache = list;
+    renderHistory();
+  }
+
+  function deleteWalk(id) {
+    const list = loadLocalWalks().filter(w => w.id !== id);
+    persistWalks(list);
+    walksCache = list;
+    renderHistory();
+  }
+
+  function loadWalks() {
+    walksCache = loadLocalWalks().sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
+    renderHistory();
+  }
+
+  // ---------- history UI ----------
+
+  function renderHistory() {
+    const listEl = $("historyList");
+    listEl.innerHTML = "";
+    $("emptyHistory").hidden = walksCache.length > 0;
+    walksCache.forEach(w => {
+      const d = new Date(w.startedAt);
+      const row = document.createElement("div");
+      row.className = "walk-row";
+      row.innerHTML =
+        '<div class="day"><div class="num">' + d.getDate() + '</div><div class="mon">' + MONTHS[d.getMonth()] + '</div></div>' +
+        '<div class="info"><div class="km">' + fmtKm(w.distanceKm) + ' km</div>' +
+        '<div class="meta">' + fmtDuration(w.durationSec) + ' &middot; ritmo ' + fmtPace(w.distanceKm, w.durationSec) + '/km</div></div>' +
+        '<div class="chev">&rsaquo;</div>';
+      row.addEventListener("click", () => openDetail(w));
+      listEl.appendChild(row);
+    });
+  }
+
+  function openDetail(w) {
+    $("detailOverlay").hidden = false;
+    const d = new Date(w.startedAt);
+    $("detailTitle").textContent = "Camminata del " + d.getDate() + " " + MONTHS_FULL[d.getMonth()];
+    $("detailDate").textContent = DAYS_FULL[d.getDay()] + ", ore " + d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0");
+    $("detailTime").textContent = fmtDuration(w.durationSec);
+    $("detailKm").textContent = fmtKm(w.distanceKm);
+    $("detailPace").textContent = fmtPace(w.distanceKm, w.durationSec) + "/km";
+    renderRoute($("detailRoute"), w.points || [], accentColor());
+    $("deleteBtn").onclick = () => {
+      deleteWalk(w.id);
+      $("detailOverlay").hidden = true;
+    };
+  }
+
+  $("backBtn").addEventListener("click", () => { $("detailOverlay").hidden = true; });
+
+  // ---------- header ----------
+
+  function renderHeader() {
+    const now = new Date();
+    const h = now.getHours();
+    $("greeting").textContent = h < 12 ? "Buongiorno" : (h < 18 ? "Buon pomeriggio" : "Buonasera");
+    $("todayDate").textContent = DAYS_FULL[now.getDay()] + " " + now.getDate() + " " + MONTHS_FULL[now.getMonth()];
+  }
+
+  // ---------- install hint + service worker ----------
+
+  function isStandalone() {
+    return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  }
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
+
+  // ---------- boot ----------
+
+  renderHeader();
+  loadWalks();
+  $("installHint").hidden = isStandalone();
+})();
+</script>
+</body>
+</html>

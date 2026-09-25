@@ -1,0 +1,14 @@
+{
+  "name": "Sentiero",
+  "short_name": "Sentiero",
+  "description": "Traccia le tue camminate mattutine: tempo, km e percorso.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F3F6F1",
+  "theme_color": "#2F6B4D",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
